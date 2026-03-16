@@ -8,11 +8,12 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 public class TakingTurnsQueueTests
 {
     [TestMethod]
-    // Scenario: Create a queue with the following people and turns: Bob (2), Tim (5), Sue (3) and
-    // run until the queue is empty
+    // Scenario: Create a queue with the following people and turns: Bob (2), Tim (5), Sue (3)
+    // and run until the queue is empty.
     // Expected Result: Bob, Tim, Sue, Bob, Tim, Sue, Tim, Sue, Tim, Tim
-    // Defect(s) Found: The queue did not correctly re-enqueue players who still had turns remaining.
-    // In some cases the remaining turns were not decremented properly before re-adding them to the queue. 
+    // Defect(s) Found: The queue implementation did not properly re-enqueue people who still
+    // had turns remaining. Additionally, the remaining turns were not always decremented
+    // correctly before re-adding the person back to the queue.
     public void TestTakingTurnsQueue_FiniteRepetition()
     {
         var bob = new Person("Bob", 2);
@@ -41,12 +42,12 @@ public class TakingTurnsQueueTests
     }
 
     [TestMethod]
-    // Scenario: Create a queue with the following people and turns: Bob (2), Tim (5), Sue (3)
-    // After running 5 times, add George with 3 turns. Run until the queue is empty.
+    // Scenario: Create a queue with Bob (2), Tim (5), Sue (3). Run the queue 5 times
+    // and then add George with 3 turns while the queue is still running.
     // Expected Result: Bob, Tim, Sue, Bob, Tim, Sue, Tim, George, Sue, Tim, George, Tim, George
-    // Defect(s) Found: Adding a new player while the queue was already running did not correctly
-    // maintain the queue order. The new player was not inserted at the proper position at the back
-    // of the queue. 
+    // Defect(s) Found: Adding a new person while the queue was already processing did not
+    // correctly maintain FIFO ordering. The new player was not always inserted at the
+    // correct position at the back of the queue.
     public void TestTakingTurnsQueue_AddPlayerMidway()
     {
         var bob = new Person("Bob", 2);
@@ -85,11 +86,12 @@ public class TakingTurnsQueueTests
     }
 
     [TestMethod]
-    // Scenario: Create a queue with the following people and turns: Bob (2), Tim (Forever), Sue (3)
-    // Run 10 times.
+    // Scenario: Create a queue with Bob (2), Tim (0 meaning infinite turns), Sue (3)
+    // and run the queue 10 times.
     // Expected Result: Bob, Tim, Sue, Bob, Tim, Sue, Tim, Sue, Tim, Tim
-    // Defect(s) Found: Players with 0 turns (infinite turns) were not handled correctly.
-    // The code modified the turns value or treated it as a finite number instead of leaving it unchanged. 
+    // Defect(s) Found: The implementation did not correctly handle infinite turns (0).
+    // Players with 0 turns were incorrectly treated as having finite turns or had their
+    // turn values modified instead of being re-enqueued indefinitely.
     public void TestTakingTurnsQueue_ForeverZero()
     {
         var timTurns = 0;
@@ -113,16 +115,17 @@ public class TakingTurnsQueueTests
 
         // Verify that the people with infinite turns really do have infinite turns.
         var infinitePerson = players.GetNextPerson();
-        Assert.AreEqual(timTurns, infinitePerson.Turns, "People with infinite turns should not have their turns parameter modified to a very big number. A very big number is not infinite.");
+        Assert.AreEqual(timTurns, infinitePerson.Turns,
+            "People with infinite turns should not have their turns parameter modified to a very big number. A very big number is not infinite.");
     }
 
     [TestMethod]
-    // Scenario: Create a queue with the following people and turns: Tim (Forever), Sue (3)
-    // Run 10 times.
+    // Scenario: Create a queue with Tim (-3 meaning infinite turns) and Sue (3)
+    // and run the queue 10 times.
     // Expected Result: Tim, Sue, Tim, Sue, Tim, Sue, Tim, Tim, Tim, Tim
-    // Defect(s) Found: Negative turns (which represent infinite turns) were not handled properly.
-    // The implementation incorrectly decremented or altered the turns value instead of keeping
-    // the original negative value and re-enqueuing the player indefinitely. 
+    // Defect(s) Found: Negative turn values (which represent infinite turns) were not handled
+    // properly. The implementation incorrectly modified the negative value instead of keeping
+    // the original value and re-enqueuing the player indefinitely.
     public void TestTakingTurnsQueue_ForeverNegative()
     {
         var timTurns = -3;
@@ -143,14 +146,16 @@ public class TakingTurnsQueueTests
 
         // Verify that the people with infinite turns really do have infinite turns.
         var infinitePerson = players.GetNextPerson();
-        Assert.AreEqual(timTurns, infinitePerson.Turns, "People with infinite turns should not have their turns parameter modified to a very big number. A very big number is not infinite.");
+        Assert.AreEqual(timTurns, infinitePerson.Turns,
+            "People with infinite turns should not have their turns parameter modified to a very big number. A very big number is not infinite.");
     }
 
     [TestMethod]
-    // Scenario: Try to get the next person from an empty queue
-    // Expected Result: Exception should be thrown with appropriate error message.
-    // Defect(s) Found: The queue did not correctly throw an InvalidOperationException
-    // with the required message "No one in the queue." when attempting to dequeue from an empty queue. 
+    // Scenario: Attempt to get the next person from an empty queue.
+    // Expected Result: An InvalidOperationException should be thrown with the message
+    // "No one in the queue."
+    // Defect(s) Found: The queue implementation did not correctly throw the required
+    // exception when attempting to retrieve a person from an empty queue.
     public void TestTakingTurnsQueue_Empty()
     {
         var players = new TakingTurnsQueue();
